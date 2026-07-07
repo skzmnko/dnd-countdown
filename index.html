@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ораска ждет...</title>
+    <title>Oraska is waiting...</title>
     <style>
-        /* ========== Глобальные стили ========== */
+        /* ========== Global styles ========== */
         * {
             margin: 0;
             padding: 0;
@@ -19,27 +19,21 @@
             align-items: center;
             font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
             
-            /* ===== ФОН ===== */
-            /* Картинка из папки проекта — замените название файла */
+            /* ===== Background ===== */
             background-image: url('timer-background.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            
-            /* Тёмная подложка для читаемости текста */
             background-color: rgba(10, 10, 10, 0.55);
             background-blend-mode: overlay;
-            
             padding: 20px;
         }
 
-        /* ========== Центральный блок ========== */
+        /* ========== Central block ========== */
         .hero {
             text-align: center;
             max-width: 800px;
             width: 100%;
-            
-            /* Лёгкая дымка для контраста */
             background: rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
@@ -54,7 +48,7 @@
             transform: scale(1.01);
         }
 
-        /* ========== Заголовок ========== */
+        /* ========== Title (dynamic) ========== */
         .hero-title {
             font-size: clamp(1.87rem, 6.67vw, 3.67rem);
             font-weight: 700;
@@ -66,6 +60,7 @@
             margin-bottom: 20px;
             line-height: 1.2;
             word-break: break-word;
+            transition: text-shadow 0.3s;
         }
 
         .hero-title span {
@@ -78,7 +73,7 @@
             100% { text-shadow: 0 4px 30px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 215, 100, 0.3); }
         }
 
-        /* ========== Таймер ========== */
+        /* ========== Timer ========== */
         .timer-grid {
             display: flex;
             justify-content: center;
@@ -135,24 +130,12 @@
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
         }
 
-        /* ========== Сообщение о старте ========== */
+        /* ========== Launch message (hidden, managed via title) ========== */
         .launch-message {
-            margin-top: 25px;
-            font-size: clamp(1.6rem, 5vw, 3rem);
-            font-weight: 700;
-            color: #ffd966;
-            text-shadow: 0 0 40px rgba(255, 215, 100, 0.4), 0 4px 20px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            padding: 16px 20px;
-            border-radius: 60px;
-            border: 1px solid rgba(255, 215, 100, 0.15);
-            letter-spacing: 2px;
             display: none;
         }
 
-        /* ========== Адаптивность ========== */
+        /* ========== Responsive ========== */
         @media (max-width: 550px) {
             .hero {
                 padding: 30px 18px 35px;
@@ -196,12 +179,12 @@
 <body>
 
     <div class="hero">
-        <!-- Заголовок -->
-        <h1 class="hero-title">
+        <!-- TITLE: dynamically changed via JS -->
+        <h1 class="hero-title" id="dynamicTitle">
             <span>Next session in...</span>
         </h1>
 
-        <!-- Таймер -->
+        <!-- Timer -->
         <div class="timer-grid" id="timerContainer">
             <div class="time-block">
                 <span class="time-number" id="days">00</span>
@@ -224,53 +207,32 @@
             </div>
         </div>
 
-        <!-- Сообщение, когда таймер достигнет нуля -->
-        <div id="launchMessage" class="launch-message">
-            It's time to play!
-        </div>
+        <!-- hidden element for compatibility (not used) -->
+        <div id="launchMessage" class="launch-message"></div>
     </div>
 
     <script>
         (function() {
-            // =============================================
-            // 1. НАСТРОЙКА ДАТЫ СТАРТА
-            //    (год, месяц (0-11), день, час, минута)
-            // =============================================
+            // ============================================================
+            // 1. SESSION START DATE: July 11, 2026, 16:00
+            // ============================================================
             const targetDate = new Date(2026, 6, 11, 16, 0, 0).getTime();
 
-            // Элементы таймера
+            // Timer elements and title
             const daysEl = document.getElementById('days');
             const hoursEl = document.getElementById('hours');
             const minutesEl = document.getElementById('minutes');
             const secondsEl = document.getElementById('seconds');
-            const launchMsg = document.getElementById('launchMessage');
-            const timerContainer = document.getElementById('timerContainer');
+            const titleEl = document.getElementById('dynamicTitle');
 
-            // =============================================
-            // 2. ФУНКЦИЯ ОБНОВЛЕНИЯ ТАЙМЕРА
-            // =============================================
-            function updateTimer() {
-                const now = Date.now();
-                let diff = targetDate - now;
-
-                // Если таймер достиг нуля или ушёл в прошлое
-                if (diff <= 0) {
-                    daysEl.textContent = '00';
-                    hoursEl.textContent = '00';
-                    minutesEl.textContent = '00';
-                    secondsEl.textContent = '00';
-                    launchMsg.style.display = 'block';
-                    timerContainer.style.opacity = '0.4';
-                    return;
-                }
-
-                // Если сообщение было видно, скрываем его (таймер ещё идёт)
-                if (launchMsg.style.display === 'block') {
-                    launchMsg.style.display = 'none';
-                    timerContainer.style.opacity = '1';
-                }
-
-                // Вычисление дней, часов, минут, секунд
+            // ============================================================
+            // 2. HELPER FUNCTIONS FOR DATE HANDLING
+            // ============================================================
+            
+            // Returns an object with { days, hours, minutes, seconds }
+            function getTimeComponents(diffMs) {
+                if (diffMs < 0) diffMs = 0;
+                let diff = diffMs;
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 diff -= days * (1000 * 60 * 60 * 24);
                 const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -278,19 +240,98 @@
                 const minutes = Math.floor(diff / (1000 * 60));
                 diff -= minutes * (1000 * 60);
                 const seconds = Math.floor(diff / 1000);
-
-                // Форматирование с ведущим нулём
-                daysEl.textContent = String(days).padStart(2, '0');
-                hoursEl.textContent = String(hours).padStart(2, '0');
-                minutesEl.textContent = String(minutes).padStart(2, '0');
-                secondsEl.textContent = String(seconds).padStart(2, '0');
+                return { days, hours, minutes, seconds };
             }
 
-            // Обновляем таймер сразу и запускаем интервал
-            updateTimer();
-            setInterval(updateTimer, 1000);
+            // Formats a number with leading zero (2 digits)
+            function pad(n) {
+                return String(n).padStart(2, '0');
+            }
 
-            console.log('⏳ Таймер запущен! Дата старта: ' + new Date(targetDate).toLocaleString());
+            // Checks if the current moment is on the session day (local time)
+            // and the timer has already expired (diff <= 0) — then show "Session is over"
+            // The session day lasts from 00:00 to 23:59:59 local time.
+            function isSessionDayOver(diff, now) {
+                if (diff > 0) return false; // still time before start
+
+                // Session date (without time)
+                const sessionDate = new Date(targetDate);
+                sessionDate.setHours(0, 0, 0, 0); // start of session day
+
+                const nowDate = new Date(now);
+                nowDate.setHours(0, 0, 0, 0); // start of current day
+
+                // If current day matches session day, and diff <= 0 means we passed start time
+                // but still within the session day (until midnight) — show "Session is over"
+                if (nowDate.getTime() === sessionDate.getTime()) {
+                    return true;
+                }
+                return false;
+            }
+
+            // ============================================================
+            // 3. MAIN UPDATE FUNCTION: TIMER + TITLE
+            // ============================================================
+            function updateTimerAndTitle() {
+                const now = Date.now();
+                let diff = targetDate - now;
+
+                // ---- 3a. Update timer digits ----
+                // If diff < 0, show 00:00:00:00
+                const comp = getTimeComponents(diff);
+                daysEl.textContent = pad(comp.days);
+                hoursEl.textContent = pad(comp.hours);
+                minutesEl.textContent = pad(comp.minutes);
+                secondsEl.textContent = pad(comp.seconds);
+
+                // ---- 3b. Title logic ----
+                // Cases:
+                // 1) diff > 0  -> "Next session in..."
+                // 2) diff <= 0 && isSessionDayOver(...) == true -> "Session is over"
+                // 3) diff <= 0 && isSessionDayOver(...) == false -> "It's time to play!"
+
+                let titleText = '';
+
+                if (diff > 0) {
+                    // Still time before the session
+                    titleText = 'Next session in...';
+                } else {
+                    // Session start time has passed (diff <= 0)
+                    if (isSessionDayOver(diff, now)) {
+                        // Still on session day (after start, before midnight)
+                        titleText = 'Session is over';
+                    } else {
+                        // After session day (next day or later)
+                        titleText = 'It\'s time to play!';
+                    }
+                }
+
+                // Update title content (keep <span> for animation)
+                const span = titleEl.querySelector('span');
+                if (span) {
+                    span.textContent = titleText;
+                } else {
+                    // fallback
+                    titleEl.innerHTML = `<span>${titleText}</span>`;
+                }
+
+                // Visual tweak: "Session is over" gets a warmer color
+                if (titleText === 'Session is over') {
+                    titleEl.style.color = '#ffaa66';
+                    titleEl.style.textShadow = '0 0 30px rgba(255, 150, 50, 0.5), 0 4px 20px rgba(0,0,0,0.8)';
+                } else {
+                    titleEl.style.color = '#ffffff';
+                    titleEl.style.textShadow = '0 4px 20px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 0, 0, 0.5)';
+                }
+            }
+
+            // ============================================================
+            // 4. START THE TIMER
+            // ============================================================
+            updateTimerAndTitle();
+            setInterval(updateTimerAndTitle, 1000);
+
+            console.log('⏳ Timer started! Session date: ' + new Date(targetDate).toLocaleString());
         })();
     </script>
 
